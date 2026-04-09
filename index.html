@@ -120,6 +120,13 @@ td.sq-cell{width:var(--cell);height:var(--cell);text-align:center;vertical-align
 .tt-sec-lbl{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:#999;display:block;margin-bottom:3px;font-family:var(--g)}
 .tt-sep{height:1px;background:var(--border);margin:7px 0}
 .tt-foot{padding:4px 12px;font-size:.6rem;color:#AAA;border-top:1px solid var(--border);font-family:var(--g)}
+#help-tt{
+  position:fixed;z-index:920;max-width:360px;background:#FEFCF8;color:var(--dark2);
+  border:1px solid var(--border2);box-shadow:0 6px 24px rgba(0,0,0,.15);
+  padding:8px 10px;font-family:var(--g);font-size:.7rem;line-height:1.4;
+  pointer-events:none;opacity:0;transition:opacity .08s
+}
+#help-tt.vis{opacity:1}
 
 /* ── Modal ─────────────────────────────────────────────── */
 #modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:36px 20px;overflow-y:auto}
@@ -157,6 +164,7 @@ td.sq-cell{width:var(--cell);height:var(--cell);text-align:center;vertical-align
   <main id="main"></main>
 </div>
 <div id="tt"><div class="tt-hd" id="tt-hd"></div><div class="tt-body" id="tt-body"></div><div class="tt-foot" id="tt-foot"></div></div>
+<div id="help-tt"></div>
 <div id="modal-ov">
   <div id="modal">
     <div id="mhd">
@@ -266,7 +274,13 @@ function buildLegend(){
     const d=document.createElement('div');
     d.className='lg-item'; d.dataset.rhet=k;
     d.innerHTML=`<span class="lg-ring" style="border-color:${c}"></span>${escH(displayRhetLabel(k))}`;
-    if(RHET_HELP[k]) d.title=RHET_HELP[k];
+    if(RHET_HELP[k]){
+      const tip=RHET_HELP[k];
+      d.addEventListener('mouseenter',e=>showHelpTip(e,tip));
+      d.addEventListener('mousemove',posHelpTip);
+      d.addEventListener('mouseleave',hideHelpTip);
+      d.addEventListener('click',hideHelpTip);
+    }
     d.addEventListener('click',()=>toggleRhetFilter(k,d));
     g2.appendChild(d);
   });
@@ -539,6 +553,26 @@ function toggleFP(btn){btn.classList.toggle('open');btn.nextElementSibling.class
 const ttEl=document.getElementById('tt'),ttHd=document.getElementById('tt-hd'),
       ttBd=document.getElementById('tt-body'),ttFt=document.getElementById('tt-foot');
 let ttTmr;
+const helpTip=document.getElementById('help-tt');
+let helpTipTmr;
+function posHelpTip(e){
+  if(!helpTip.classList.contains('vis')) return;
+  const pad=12;
+  let x=e.clientX+pad,y=e.clientY+pad;
+  const w=helpTip.offsetWidth||260,h=helpTip.offsetHeight||60;
+  if(x+w>window.innerWidth-8) x=e.clientX-w-pad;
+  if(y+h>window.innerHeight-8) y=e.clientY-h-pad;
+  helpTip.style.left=Math.max(8,x)+'px';
+  helpTip.style.top=Math.max(8,y)+'px';
+}
+function showHelpTip(e,text){
+  clearTimeout(helpTipTmr);
+  helpTip.textContent=text;
+  helpTip.classList.add('vis');
+  posHelpTip(e);
+}
+function hideHelpTip(){helpTipTmr=setTimeout(()=>helpTip.classList.remove('vis'),40);}
+
 function showTT(e,d){
   clearTimeout(ttTmr);
   const fc=LC[d.l]||'#ccc';
