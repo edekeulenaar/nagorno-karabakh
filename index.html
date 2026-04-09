@@ -184,7 +184,36 @@ const ALL_LEANS=["Armenian official sources", "Azerbaijani official sources", "C
 const ALL_RHET=["Diplomatic", "Diplomatic refusal", "Error", "None", "Refusal"];
 
 const MAX_W=375,MIN_SQ=7,MAX_SQ=34;
-function sqSz(w){return MIN_SQ+(MAX_SQ-MIN_SQ)*Math.sqrt(Math.min(w,MAX_W)/MAX_W);}
+const MM_TO_PX=96/25.4;
+const UNIFORM_SQ=Math.max(MIN_SQ,MAX_SQ-(2*MM_TO_PX));
+let uniformSquareSize=false;
+function sqSz(w){
+  if(uniformSquareSize) return UNIFORM_SQ;
+  return MIN_SQ+(MAX_SQ-MIN_SQ)*Math.sqrt(Math.min(w,MAX_W)/MAX_W);
+}
+function applySquareSizes(){
+  document.querySelectorAll('.sq[data-w]').forEach(sq=>{
+    const s=sqSz(Number(sq.dataset.w)||0);
+    sq.style.width=s+'px'; sq.style.height=s+'px';
+  });
+  document.querySelectorAll('.lg-sq-demo[data-w]').forEach(sq=>{
+    const s=sqSz(Number(sq.dataset.w)||0);
+    sq.style.width=s+'px'; sq.style.height=s+'px';
+  });
+}
+function updateSizeModeUi(){
+  const btn=document.getElementById('sq-size-toggle');
+  if(!btn) return;
+  btn.textContent=uniformSquareSize?'Square size: uniform':'Square size: by words';
+}
+function setUniformSquareSize(on=true){
+  uniformSquareSize=!!on;
+  applySquareSizes();
+  updateSizeModeUi();
+}
+function removeSquareSize(){setUniformSquareSize(true);}
+function restoreSquareSize(){setUniformSquareSize(false);}
+function toggleSquareSizeMode(){setUniformSquareSize(!uniformSquareSize);}
 function ptId(pt){return 'pt-'+pt.replace(/[^a-zA-Z0-9]+/g,'-');}
 
 // filter state
@@ -245,13 +274,22 @@ function buildLegend(){
     const s=sqSz(w);
     const pair=document.createElement('span'); pair.className='lg-sz-pair';
     const sq=document.createElement('span'); sq.className='lg-sq-demo';
+    sq.dataset.w=String(w);
     sq.style.width=s+'px'; sq.style.height=s+'px';
     const lb=document.createElement('span'); lb.className='lg-sz-lbl'; lb.textContent=lbl;
     pair.appendChild(sq); pair.appendChild(lb);
     srow.appendChild(pair);
   });
   g3.appendChild(srow);
+  const sizeActions=document.createElement('div'); sizeActions.className='sb-actions';
+  const sizeBtn=document.createElement('button');
+  sizeBtn.className='sb-btn';
+  sizeBtn.id='sq-size-toggle';
+  sizeBtn.addEventListener('click',toggleSquareSizeMode);
+  sizeActions.appendChild(sizeBtn);
+  g3.appendChild(sizeActions);
   cont.appendChild(g3);
+  updateSizeModeUi();
 }
 
 function toggleLeansFilter(val, el){
@@ -459,6 +497,7 @@ function buildTable(pobj,langs){
           const fc=LC[rd.l]||LC['']||'#D0D0D0';
           const rc=RC[rd.r];
           const sq=document.createElement('div'); sq.className='sq';
+          sq.dataset.w=String(rd.w);
           sq.style.width=s+'px'; sq.style.height=s+'px';
           sq.style.background=fc; sq.style.borderRadius='2px';
           if(rc){sq.style.outline=`2.5px solid ${rc}`;sq.style.outlineOffset='0.1mm';}
